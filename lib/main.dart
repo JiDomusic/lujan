@@ -725,7 +725,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
       'rotation': 0,
     },
     {
-      'image': 'assets/11 -29 x 44cm oleo sobre lienzo.jpg',
+      'image': 'assets/11 -29 x 44cm oleo sobre lienzo - 2.jpg.jpeg',
       'title': 'Sin titulo',
       'size': '29 x 44 cm',
       'technique': 'Oleo sobre lienzo',
@@ -741,7 +741,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
       'rotation': 0,
     },
     {
-      'image': 'assets/13 - 21x29 cm oleo sobre lienzo.jpg',
+      'image': 'assets/13 - 21x29 cm oleo sobre lienzo - 2.jpg',
       'title': 'Sin titulo',
       'size': '21 x 29 cm',
       'technique': 'Oleo sobre lienzo',
