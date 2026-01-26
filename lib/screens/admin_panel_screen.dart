@@ -609,6 +609,30 @@ class _BioTabState extends State<_BioTab> {
   bool _isLoading = true;
   bool _isSaving = false;
 
+  void _applyItalic(TextEditingController controller) {
+    final selection = controller.selection;
+    if (!selection.isValid) return;
+
+    final text = controller.text;
+    final start = selection.start;
+    final end = selection.end;
+    final selected = selection.isCollapsed ? '' : text.substring(start, end);
+
+    final replacement = '[i]$selected[/i]';
+    final newText = text.replaceRange(start, end, replacement);
+
+    final newOffset = selection.isCollapsed
+        ? start + 3
+        : start + replacement.length;
+
+    controller.value = controller.value.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newOffset),
+      composing: TextRange.empty,
+    );
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
@@ -727,6 +751,20 @@ class _BioTabState extends State<_BioTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Selecciona texto y pulsa Itálica para alternar la fuente',
+                      style: GoogleFonts.roboto(fontSize: 12, color: Colors.black45),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _applyItalic(_esController),
+                      icon: const Icon(Icons.format_italic, size: 18),
+                      label: const Text('Itálica'),
+                    ),
+                  ],
+                ),
                 TextField(
                   controller: _esController,
                   maxLines: 8,
@@ -797,6 +835,20 @@ class _BioTabState extends State<_BioTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _applyItalic(_enController),
+                      icon: const Icon(Icons.format_italic, size: 18),
+                      label: const Text('Italics'),
+                    ),
+                    Text(
+                      'Select text and press Italics to switch font',
+                      style: GoogleFonts.roboto(fontSize: 12, color: Colors.black45),
+                    ),
+                  ],
+                ),
                 TextField(
                   controller: _enController,
                   maxLines: 8,

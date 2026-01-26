@@ -440,6 +440,42 @@ class _BioScreenState extends State<BioScreen> {
   String? _bioEs;
   String? _bioEn;
 
+  TextSpan _buildStyledSpan(String content, bool isDesktop) {
+    final baseStyle = GoogleFonts.roboto(
+      fontSize: isDesktop ? 18 : 14,
+      fontWeight: FontWeight.w300,
+      color: Colors.black54,
+      height: 1.8,
+      letterSpacing: 0.5,
+    );
+    final italicStyle = GoogleFonts.playfairDisplay(
+      fontSize: isDesktop ? 18 : 14,
+      fontStyle: FontStyle.italic,
+      fontWeight: FontWeight.w400,
+      color: const Color(0xFF6A4EB3),
+      height: 1.8,
+      letterSpacing: 0.5,
+    );
+
+    final spans = <TextSpan>[];
+    final regex = RegExp(r'\[i\](.*?)\[/i\]', dotAll: true);
+    int lastIndex = 0;
+
+    for (final match in regex.allMatches(content)) {
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(text: content.substring(lastIndex, match.start), style: baseStyle));
+      }
+      spans.add(TextSpan(text: match.group(1), style: italicStyle));
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < content.length) {
+      spans.add(TextSpan(text: content.substring(lastIndex), style: baseStyle));
+    }
+
+    return TextSpan(style: baseStyle, children: spans);
+  }
+
   // Fallback hardcodeado
   static const _defaultBioEs =
       'Lujan Allemand nacio en 1983, en Lincoln, Buenos Aires, Argentina. '
@@ -512,18 +548,14 @@ class _BioScreenState extends State<BioScreen> {
                     ),
                   ),
                   const SizedBox(height: 48),
-                  Text(
-                    tr(
-                      context,
-                      es: _bioEs ?? _defaultBioEs,
-                      en: _bioEn ?? _defaultBioEn,
-                    ),
-                    style: GoogleFonts.roboto(
-                      fontSize: isDesktop ? 18 : 14,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.black54,
-                      height: 1.8,
-                      letterSpacing: 0.5,
+                  RichText(
+                    text: _buildStyledSpan(
+                      tr(
+                        context,
+                        es: _bioEs ?? _defaultBioEs,
+                        en: _bioEn ?? _defaultBioEn,
+                      ),
+                      isDesktop,
                     ),
                   ),
                 ],
