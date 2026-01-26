@@ -3,7 +3,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 
 class SupabaseService {
+  static bool _initialized = false;
+
+  static Future<void> init() async {
+    if (_initialized) return;
+    try {
+      await Supabase.initialize(
+        url: SupabaseConfig.supabaseUrl,
+        anonKey: SupabaseConfig.supabaseAnonKey,
+      );
+      _initialized = true;
+    } catch (_) {}
+  }
+
   static SupabaseClient? get _clientOrNull {
+    if (!_initialized) return null;
     try {
       return Supabase.instance.client;
     } catch (e) {

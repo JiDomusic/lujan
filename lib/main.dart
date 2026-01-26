@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'config/supabase_config.dart';
 import 'services/supabase_service.dart';
 import 'screens/admin_login_screen.dart';
 
@@ -44,18 +42,9 @@ String tr(BuildContext context, {required String es, required String en}) {
   return LanguageScope.languageOf(context) == AppLanguage.es ? es : en;
 }
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  try {
-    await Supabase.initialize(
-      url: SupabaseConfig.supabaseUrl,
-      anonKey: SupabaseConfig.supabaseAnonKey,
-    );
-  } catch (e) {
-    // Continuar sin Supabase si falla
-  }
-
+  SupabaseService.init();
   runApp(const LujanPortfolioApp());
 }
 
