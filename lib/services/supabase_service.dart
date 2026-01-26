@@ -3,6 +3,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 
 class SupabaseService {
+  static SupabaseClient? get _clientOrNull {
+    try {
+      return Supabase.instance.client;
+    } catch (e) {
+      return null;
+    }
+  }
+
   static SupabaseClient get client => Supabase.instance.client;
 
   // ==================== AUTH ====================
@@ -25,12 +33,17 @@ class SupabaseService {
   // ==================== GALLERY ====================
 
   static Future<List<Map<String, dynamic>>> getGalleryImages() async {
-    final response = await client
-        .from('gallery_images')
-        .select()
-        .order('display_order', ascending: true)
-        .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
+    if (_clientOrNull == null) return [];
+    try {
+      final response = await client
+          .from('gallery_images')
+          .select()
+          .order('display_order', ascending: true)
+          .order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
   }
 
   static Future<void> addGalleryImage({
@@ -115,8 +128,13 @@ class SupabaseService {
   // ==================== BIO ====================
 
   static Future<Map<String, dynamic>?> getBioContent() async {
-    final response = await client.from('bio_content').select().limit(1).single();
-    return response;
+    if (_clientOrNull == null) return null;
+    try {
+      final response = await client.from('bio_content').select().limit(1).single();
+      return response;
+    } catch (e) {
+      return null;
+    }
   }
 
   static Future<void> updateBioContent({

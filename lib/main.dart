@@ -47,10 +47,14 @@ String tr(BuildContext context, {required String es, required String en}) {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: SupabaseConfig.supabaseUrl,
-    anonKey: SupabaseConfig.supabaseAnonKey,
-  );
+  try {
+    await Supabase.initialize(
+      url: SupabaseConfig.supabaseUrl,
+      anonKey: SupabaseConfig.supabaseAnonKey,
+    );
+  } catch (e) {
+    // Continuar sin Supabase si falla
+  }
 
   runApp(const LujanPortfolioApp());
 }
