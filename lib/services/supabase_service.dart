@@ -16,6 +16,14 @@ class SupabaseService {
     } catch (_) {}
   }
 
+  static Future<SupabaseClient> _getClientOrThrow() async {
+    await init();
+    if (!_initialized) {
+      throw StateError('SupabaseService.init() must be called before using Supabase');
+    }
+    return Supabase.instance.client;
+  }
+
   static SupabaseClient? get _clientOrNull {
     if (!_initialized) return null;
     try {
@@ -25,11 +33,10 @@ class SupabaseService {
     }
   }
 
-  static SupabaseClient get client => Supabase.instance.client;
-
   // ==================== AUTH ====================
 
   static Future<void> signIn(String email, String password) async {
+    final client = await _getClientOrThrow();
     await client.auth.signInWithPassword(
       email: email,
       password: password,
@@ -37,18 +44,19 @@ class SupabaseService {
   }
 
   static Future<void> signOut() async {
+    final client = await _getClientOrThrow();
     await client.auth.signOut();
   }
 
-  static User? get currentUser => client.auth.currentUser;
+  static User? get currentUser => _clientOrNull?.auth.currentUser;
 
   static bool get isLoggedIn => currentUser != null;
 
   // ==================== GALLERY ====================
 
   static Future<List<Map<String, dynamic>>> getGalleryImages() async {
-    if (_clientOrNull == null) return [];
     try {
+      final client = await _getClientOrThrow();
       final response = await client
           .from('gallery_images')
           .select()
@@ -69,6 +77,7 @@ class SupabaseService {
     int rotation = 0,
     int displayOrder = 0,
   }) async {
+    final client = await _getClientOrThrow();
     await client.from('gallery_images').insert({
       'image_url': imageUrl,
       'title': title,
@@ -89,6 +98,7 @@ class SupabaseService {
     int? rotation,
     int? displayOrder,
   }) async {
+    final client = await _getClientOrThrow();
     final updates = <String, dynamic>{};
     if (title != null) updates['title'] = title;
     if (technique != null) updates['technique'] = technique;
@@ -103,6 +113,7 @@ class SupabaseService {
   }
 
   static Future<void> deleteGalleryImage(String id, String imageUrl) async {
+    final client = await _getClientOrThrow();
     // Eliminar de la base de datos
     await client.from('gallery_images').delete().eq('id', id);
 
@@ -125,6 +136,7 @@ class SupabaseService {
   // ==================== STORAGE ====================
 
   static Future<String> uploadImage(Uint8List bytes, String fileName) async {
+    final client = await _getClientOrThrow();
     final String path = 'gallery/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
     await client.storage.from(SupabaseConfig.bucketName).uploadBinary(
@@ -142,8 +154,8 @@ class SupabaseService {
   // ==================== BIO ====================
 
   static Future<Map<String, dynamic>?> getBioContent() async {
-    if (_clientOrNull == null) return null;
     try {
+      final client = await _getClientOrThrow();
       final response = await client.from('bio_content').select().limit(1).single();
       return response;
     } catch (e) {
@@ -156,6 +168,7 @@ class SupabaseService {
     required String contentEs,
     required String contentEn,
   }) async {
+    final client = await _getClientOrThrow();
     await client.from('bio_content').update({
       'content_es': contentEs,
       'content_en': contentEn,

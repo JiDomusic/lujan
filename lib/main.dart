@@ -42,9 +42,9 @@ String tr(BuildContext context, {required String es, required String en}) {
   return LanguageScope.languageOf(context) == AppLanguage.es ? es : en;
 }
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SupabaseService.init();
+  await SupabaseService.init();
   runApp(const LujanPortfolioApp());
 }
 
@@ -726,6 +726,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
   ];
 
   // Combinar assets + supabase
+  // Primero las obras locales (no se tocan), luego las que se suban al bucket
   List<Map<String, dynamic>> get _galleryItems => [
         ..._assetGalleryItems,
         ..._supabaseItems,
@@ -1139,22 +1140,20 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   void _precacheGalleryImages(BuildContext context) {
-    // Precargar imagen actual y las siguientes 2 primero (prioridad alta)
-    for (int i = 0; i < _galleryItems.length && i < 3; i++) {
-      final asset = AssetImage(_galleryItems[i]['image']!);
-      precacheImage(asset, context);
+    // Precargar solo assets locales para no forzar carga de red innecesaria
+    final assets = _galleryItems.where((e) => e['isNetwork'] != true).toList();
+    for (int i = 0; i < assets.length && i < 3; i++) {
+      precacheImage(AssetImage(assets[i]['image']!), context);
     }
-    // Luego precargar el resto en background
     Future.delayed(const Duration(milliseconds: 100), () {
-      for (int i = 3; i < _galleryItems.length; i++) {
-        final asset = AssetImage(_galleryItems[i]['image']!);
-        precacheImage(asset, context);
+      for (int i = 3; i < assets.length; i++) {
+        precacheImage(AssetImage(assets[i]['image']!), context);
       }
     });
   }
 
   void _precacheNearbyImages(BuildContext context, int currentIndex) {
-    // Precargar las imágenes cercanas cuando cambia la página
+    // Precargar las imágenes cercanas (solo assets locales)
     final indicesToPreload = [
       currentIndex - 1,
       currentIndex + 1,
@@ -1162,8 +1161,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
     ].where((i) => i >= 0 && i < _galleryItems.length);
 
     for (final i in indicesToPreload) {
-      final asset = AssetImage(_galleryItems[i]['image']!);
-      precacheImage(asset, context);
+      final item = _galleryItems[i];
+      if (item['isNetwork'] == true) continue;
+      precacheImage(AssetImage(item['image']!), context);
     }
   }
 }
