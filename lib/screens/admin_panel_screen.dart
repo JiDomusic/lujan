@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 import '../services/supabase_service.dart';
 
 class AdminPanelScreen extends StatefulWidget {
@@ -603,39 +605,45 @@ class _BioTab extends StatefulWidget {
 }
 
 class _BioTabState extends State<_BioTab> {
-  final _esController = TextEditingController();
-  final _enController = TextEditingController();
+  late quill.QuillController _esController;
+  late quill.QuillController _enController;
+  final _esFocus = FocusNode();
+  final _enFocus = FocusNode();
+  final _esScroll = ScrollController();
+  final _enScroll = ScrollController();
   String? _bioId;
   bool _isLoading = true;
   bool _isSaving = false;
 
-  void _applyItalic(TextEditingController controller) {
-    final selection = controller.selection;
-    if (!selection.isValid) return;
-
-    final text = controller.text;
-    final start = selection.start;
-    final end = selection.end;
-    final selected = selection.isCollapsed ? '' : text.substring(start, end);
-
-    final replacement = '[i]$selected[/i]';
-    final newText = text.replaceRange(start, end, replacement);
-
-    final newOffset = selection.isCollapsed
-        ? start + 3
-        : start + replacement.length;
-
-    controller.value = controller.value.copyWith(
-      text: newText,
-      selection: TextSelection.collapsed(offset: newOffset),
-      composing: TextRange.empty,
-    );
-    setState(() {});
+  quill.Document _parseBio(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return quill.Document()..insert(0, '');
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return quill.Document.fromJson(decoded);
+      }
+    } catch (_) {
+      // Ignorar
+    }
+    return quill.Document()..insert(0, raw);
   }
+
+  String _encodeBio(quill.QuillController controller) {
+    return jsonEncode(controller.document.toDelta().toJson());
+  }
+
+  quill.QuillController _emptyController() => quill.QuillController(
+        document: quill.Document()..insert(0, ''),
+        selection: const TextSelection.collapsed(offset: 0),
+      );
 
   @override
   void initState() {
     super.initState();
+    _esController = _emptyController();
+    _enController = _emptyController();
     _loadBio();
   }
 
@@ -643,6 +651,10 @@ class _BioTabState extends State<_BioTab> {
   void dispose() {
     _esController.dispose();
     _enController.dispose();
+    _esFocus.dispose();
+    _enFocus.dispose();
+    _esScroll.dispose();
+    _enScroll.dispose();
     super.dispose();
   }
 
@@ -652,8 +664,16 @@ class _BioTabState extends State<_BioTab> {
       final bio = await SupabaseService.getBioContent();
       if (bio != null) {
         _bioId = bio['id'];
-        _esController.text = bio['content_es'] ?? '';
-        _enController.text = bio['content_en'] ?? '';
+        setState(() {
+          _esController = quill.QuillController(
+            document: _parseBio(bio['content_es']),
+            selection: const TextSelection.collapsed(offset: 0),
+          );
+          _enController = quill.QuillController(
+            document: _parseBio(bio['content_en']),
+            selection: const TextSelection.collapsed(offset: 0),
+          );
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -673,8 +693,8 @@ class _BioTabState extends State<_BioTab> {
     try {
       await SupabaseService.updateBioContent(
         id: _bioId!,
-        contentEs: _esController.text,
-        contentEn: _enController.text,
+        contentEs: _encodeBio(_esController),
+        contentEn: _encodeBio(_enController),
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -751,35 +771,111 @@ class _BioTabState extends State<_BioTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Selecciona texto y pulsa Itálica para alternar la fuente',
-                      style: GoogleFonts.roboto(fontSize: 12, color: Colors.black45),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => _applyItalic(_esController),
-                      icon: const Icon(Icons.format_italic, size: 18),
-                      label: const Text('Itálica'),
-                    ),
-                  ],
-                ),
-                TextField(
-                  controller: _esController,
-                  maxLines: 8,
-                  decoration: InputDecoration(
-                    hintText: 'Escribe la biografía en español...',
-                    filled: true,
-                    fillColor: const Color(0xFFF8F8F8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
+                quill.QuillProvider(
+                  configurations: quill.QuillConfigurations(
+                    controller: _esController,
+                    sharedConfigurations: quill.QuillSharedConfigurations(
+                      locale: Localizations.maybeLocaleOf(context),
                     ),
                   ),
-                  style: GoogleFonts.roboto(
-                    fontSize: 14,
-                    height: 1.6,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.text_format, size: 16, color: Colors.black54),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Formato rápido',
+                            style: GoogleFonts.roboto(fontSize: 12, color: Colors.black54),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F8F8),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        child: Column(
+                          children: [
+                            quill.QuillToolbar(
+                              configurations: quill.QuillToolbarConfigurations(
+                                showBoldButton: false,
+                                showSmallButton: false,
+                                showUnderLineButton: false,
+                                showStrikeThrough: false,
+                                showInlineCode: false,
+                                showColorButton: false,
+                                showBackgroundColorButton: false,
+                                showClearFormat: false,
+                                showAlignmentButtons: false,
+                                showHeaderStyle: false,
+                                showListNumbers: false,
+                                showListBullets: false,
+                                showListCheck: false,
+                                showCodeBlock: false,
+                                showQuote: false,
+                                showIndent: false,
+                                showLink: false,
+                                showSearchButton: false,
+                                showFontFamily: false,
+                                showFontSize: false,
+                                showUndo: false,
+                                showRedo: false,
+                                showDividers: false,
+                                multiRowsDisplay: false,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 200,
+                              child: quill.QuillEditor(
+                                focusNode: _esFocus,
+                                scrollController: _esScroll,
+                                configurations: quill.QuillEditorConfigurations(
+                                  readOnly: false,
+                                  placeholder: 'Escribe la biografía en español...',
+                                  padding: EdgeInsets.zero,
+                                  customStyles: quill.DefaultStyles(
+                                    paragraph: quill.DefaultTextBlockStyle(
+                                      GoogleFonts.roboto(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.black87,
+                                        height: 1.6,
+                                        letterSpacing: 0.4,
+                                      ),
+                                      const quill.VerticalSpacing(0, 0),
+                                      const quill.VerticalSpacing(0, 0),
+                                      null,
+                                    ),
+                                  ),
+                                  customStyleBuilder: (attr) => attr.key == quill.Attribute.italic.key
+                                      ? GoogleFonts.playfairDisplay(
+                                          fontSize: 14,
+                                          fontStyle: FontStyle.italic,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF6A4EB3),
+                                          height: 1.6,
+                                          letterSpacing: 0.4,
+                                        )
+                                      : GoogleFonts.roboto(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: Colors.black87,
+                                          height: 1.6,
+                                          letterSpacing: 0.4,
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -835,35 +931,111 @@ class _BioTabState extends State<_BioTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => _applyItalic(_enController),
-                      icon: const Icon(Icons.format_italic, size: 18),
-                      label: const Text('Italics'),
-                    ),
-                    Text(
-                      'Select text and press Italics to switch font',
-                      style: GoogleFonts.roboto(fontSize: 12, color: Colors.black45),
-                    ),
-                  ],
-                ),
-                TextField(
-                  controller: _enController,
-                  maxLines: 8,
-                  decoration: InputDecoration(
-                    hintText: 'Write the biography in English...',
-                    filled: true,
-                    fillColor: const Color(0xFFF8F8F8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
+                quill.QuillProvider(
+                  configurations: quill.QuillConfigurations(
+                    controller: _enController,
+                    sharedConfigurations: quill.QuillSharedConfigurations(
+                      locale: Localizations.maybeLocaleOf(context),
                     ),
                   ),
-                  style: GoogleFonts.roboto(
-                    fontSize: 14,
-                    height: 1.6,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.text_format, size: 16, color: Colors.black54),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Quick format',
+                            style: GoogleFonts.roboto(fontSize: 12, color: Colors.black54),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F8F8),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        child: Column(
+                          children: [
+                            quill.QuillToolbar(
+                              configurations: quill.QuillToolbarConfigurations(
+                                showBoldButton: false,
+                                showSmallButton: false,
+                                showUnderLineButton: false,
+                                showStrikeThrough: false,
+                                showInlineCode: false,
+                                showColorButton: false,
+                                showBackgroundColorButton: false,
+                                showClearFormat: false,
+                                showAlignmentButtons: false,
+                                showHeaderStyle: false,
+                                showListNumbers: false,
+                                showListBullets: false,
+                                showListCheck: false,
+                                showCodeBlock: false,
+                                showQuote: false,
+                                showIndent: false,
+                                showLink: false,
+                                showSearchButton: false,
+                                showFontFamily: false,
+                                showFontSize: false,
+                                showUndo: false,
+                                showRedo: false,
+                                showDividers: false,
+                                multiRowsDisplay: false,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 200,
+                              child: quill.QuillEditor(
+                                focusNode: _enFocus,
+                                scrollController: _enScroll,
+                                configurations: quill.QuillEditorConfigurations(
+                                  readOnly: false,
+                                  placeholder: 'Write the biography in English...',
+                                  padding: EdgeInsets.zero,
+                                  customStyles: quill.DefaultStyles(
+                                    paragraph: quill.DefaultTextBlockStyle(
+                                      GoogleFonts.roboto(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.black87,
+                                        height: 1.6,
+                                        letterSpacing: 0.4,
+                                      ),
+                                      const quill.VerticalSpacing(0, 0),
+                                      const quill.VerticalSpacing(0, 0),
+                                      null,
+                                    ),
+                                  ),
+                                  customStyleBuilder: (attr) => attr.key == quill.Attribute.italic.key
+                                      ? GoogleFonts.playfairDisplay(
+                                          fontSize: 14,
+                                          fontStyle: FontStyle.italic,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF6A4EB3),
+                                          height: 1.6,
+                                          letterSpacing: 0.4,
+                                        )
+                                      : GoogleFonts.roboto(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: Colors.black87,
+                                          height: 1.6,
+                                          letterSpacing: 0.4,
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'services/supabase_service.dart';
 import 'screens/admin_login_screen.dart';
 
@@ -439,42 +441,10 @@ class BioScreen extends StatefulWidget {
 class _BioScreenState extends State<BioScreen> {
   String? _bioEs;
   String? _bioEn;
-
-  TextSpan _buildStyledSpan(String content, bool isDesktop) {
-    final baseStyle = GoogleFonts.roboto(
-      fontSize: isDesktop ? 18 : 14,
-      fontWeight: FontWeight.w300,
-      color: Colors.black54,
-      height: 1.8,
-      letterSpacing: 0.5,
-    );
-    final italicStyle = GoogleFonts.playfairDisplay(
-      fontSize: isDesktop ? 18 : 14,
-      fontStyle: FontStyle.italic,
-      fontWeight: FontWeight.w400,
-      color: const Color(0xFF6A4EB3),
-      height: 1.8,
-      letterSpacing: 0.5,
-    );
-
-    final spans = <TextSpan>[];
-    final regex = RegExp(r'\[i\](.*?)\[/i\]', dotAll: true);
-    int lastIndex = 0;
-
-    for (final match in regex.allMatches(content)) {
-      if (match.start > lastIndex) {
-        spans.add(TextSpan(text: content.substring(lastIndex, match.start), style: baseStyle));
-      }
-      spans.add(TextSpan(text: match.group(1), style: italicStyle));
-      lastIndex = match.end;
-    }
-
-    if (lastIndex < content.length) {
-      spans.add(TextSpan(text: content.substring(lastIndex), style: baseStyle));
-    }
-
-    return TextSpan(style: baseStyle, children: spans);
-  }
+  late quill.QuillController _esController;
+  late quill.QuillController _enController;
+  final FocusNode _viewerFocus = FocusNode();
+  final ScrollController _viewerScroll = ScrollController();
 
   // Fallback hardcodeado
   static const _defaultBioEs =
@@ -502,17 +472,67 @@ class _BioScreenState extends State<BioScreen> {
   @override
   void initState() {
     super.initState();
+    _esController = quill.QuillController(
+      document: _parseBio(null, fallback: _defaultBioEs),
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+    _enController = quill.QuillController(
+      document: _parseBio(null, fallback: _defaultBioEn),
+      selection: const TextSelection.collapsed(offset: 0),
+    );
     _loadBio();
+  }
+
+  @override
+  void dispose() {
+    _esController.dispose();
+    _enController.dispose();
+    _viewerFocus.dispose();
+    _viewerScroll.dispose();
+    super.dispose();
+  }
+
+  quill.Document _parseBio(String? raw, {required String fallback}) {
+    if (raw == null || raw.isEmpty) {
+      return quill.Document()..insert(0, fallback);
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return quill.Document.fromJson(decoded);
+      }
+    } catch (_) {
+      // Ignorar y usar fallback/texto plano
+    }
+    return quill.Document()..insert(0, raw);
   }
 
   Future<void> _loadBio() async {
     try {
       final bio = await SupabaseService.getBioContent();
       if (bio != null && mounted) {
-        setState(() {
-          _bioEs = bio['content_es'];
-          _bioEn = bio['content_en'];
-        });
+        _bioEs = bio['content_es'];
+        _bioEn = bio['content_en'];
+        _esController = quill.QuillController(
+          document: _parseBio(_bioEs, fallback: _defaultBioEs),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+        _enController = quill.QuillController(
+          document: _parseBio(_bioEn, fallback: _defaultBioEn),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+        setState(() {});
+      } else if (mounted) {
+        // Si no hay datos en Supabase, usar fallback en ambos idiomas
+        _esController = quill.QuillController(
+          document: _parseBio(null, fallback: _defaultBioEs),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+        _enController = quill.QuillController(
+          document: _parseBio(null, fallback: _defaultBioEn),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
+        setState(() {});
       }
     } catch (e) {
       // Usar fallback hardcodeado
@@ -548,16 +568,61 @@ class _BioScreenState extends State<BioScreen> {
                     ),
                   ),
                   const SizedBox(height: 48),
-                  RichText(
-                    text: _buildStyledSpan(
-                      tr(
-                        context,
-                        es: _bioEs ?? _defaultBioEs,
-                        en: _bioEn ?? _defaultBioEn,
+                  Builder(builder: (context) {
+                    final controller = LanguageScope.languageOf(context) == AppLanguage.es
+                        ? _esController
+                        : _enController;
+                    return quill.QuillProvider(
+                      configurations: quill.QuillConfigurations(
+                        controller: controller,
+                        sharedConfigurations: quill.QuillSharedConfigurations(
+                          locale: Localizations.maybeLocaleOf(context),
+                        ),
                       ),
-                      isDesktop,
-                    ),
-                  ),
+                      child: quill.QuillEditor(
+                        focusNode: _viewerFocus,
+                        scrollController: _viewerScroll,
+                        configurations: quill.QuillEditorConfigurations(
+                          readOnly: true,
+                          enableInteractiveSelection: false,
+                          padding: EdgeInsets.zero,
+                          customStyles: quill.DefaultStyles(
+                            paragraph: quill.DefaultTextBlockStyle(
+                              GoogleFonts.roboto(
+                                fontSize: isDesktop ? 18 : 14,
+                                fontWeight: FontWeight.w300,
+                                color: Colors.black54,
+                                height: 1.8,
+                                letterSpacing: 0.5,
+                              ),
+                              const quill.VerticalSpacing(0, 0),
+                              const quill.VerticalSpacing(0, 0),
+                              null,
+                            ),
+                          ),
+                          customStyleBuilder: (attr) {
+                            if (attr.key == quill.Attribute.italic.key) {
+                              return GoogleFonts.playfairDisplay(
+                                fontSize: isDesktop ? 18 : 14,
+                                fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF6A4EB3),
+                                height: 1.8,
+                                letterSpacing: 0.5,
+                              );
+                            }
+                            return GoogleFonts.roboto(
+                              fontSize: isDesktop ? 18 : 14,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.black54,
+                              height: 1.8,
+                              letterSpacing: 0.5,
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
