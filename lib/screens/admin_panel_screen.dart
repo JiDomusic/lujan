@@ -207,6 +207,9 @@ class _CurrentWorkTabState extends State<_CurrentWorkTab> {
     String mediaType = work?['media_type'] ?? 'youtube';
     bool isUploading = false;
 
+    // Capturar ScaffoldMessenger del contexto padre ANTES de abrir el diálogo
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -269,18 +272,14 @@ class _CurrentWorkTabState extends State<_CurrentWorkTab> {
                                   final bytes = await video.readAsBytes();
                                   final url = await SupabaseService.uploadVideo(bytes, video.name);
                                   urlController.text = url;
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Video subido')),
-                                    );
-                                  }
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error al subir: $e')),
+                                  scaffoldMessenger.showSnackBar(
+                                    const SnackBar(content: Text('Video subido')),
                                   );
                                 }
+                              } catch (e) {
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(content: Text('Error al subir: $e')),
+                                );
                               } finally {
                                 setDialogState(() => isUploading = false);
                               }
@@ -329,7 +328,7 @@ class _CurrentWorkTabState extends State<_CurrentWorkTab> {
                         final order = int.tryParse(orderController.text) ?? 0;
 
                         if (url.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          scaffoldMessenger.showSnackBar(
                             const SnackBar(content: Text('Falta la URL o el video')),
                           );
                           return;
@@ -356,17 +355,13 @@ class _CurrentWorkTabState extends State<_CurrentWorkTab> {
                             );
                           }
                           await _loadWorks();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(isEdit ? 'Actualizado' : 'Agregado')),
-                            );
-                          }
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(content: Text(isEdit ? 'Actualizado' : 'Agregado')),
+                          );
                         } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                          }
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(content: Text('Error: $e')),
+                          );
                         }
                       },
                 style: ElevatedButton.styleFrom(

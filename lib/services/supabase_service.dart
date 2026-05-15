@@ -179,17 +179,13 @@ class SupabaseService {
   // ==================== CURRENT WORKS ====================
 
   static Future<List<Map<String, dynamic>>> getCurrentWorks() async {
-    try {
-      final client = await _getClientOrThrow();
-      final response = await client
-          .from('current_works')
-          .select()
-          .order('display_order', ascending: true)
-          .order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      return [];
-    }
+    final client = await _getClientOrThrow();
+    final response = await client
+        .from('current_works')
+        .select()
+        .order('display_order', ascending: true)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
   }
 
   static Future<void> addCurrentWork({
