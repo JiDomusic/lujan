@@ -6,6 +6,33 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import '../services/supabase_service.dart';
 
+TextStyle _editorStyleForAttr(quill.Attribute attr) {
+  if (attr.key == quill.Attribute.font.key) {
+    final font = attr.value as String? ?? 'Roboto';
+    switch (font) {
+      case 'Playfair Display':
+        return GoogleFonts.playfairDisplay(fontSize: 14, color: Colors.black87, height: 1.6);
+      case 'Georgia':
+        return const TextStyle(fontFamily: 'Georgia', fontSize: 14, color: Colors.black87, height: 1.6);
+      case 'Courier New':
+        return const TextStyle(fontFamily: 'Courier', fontSize: 14, color: Colors.black87, height: 1.6);
+      case 'Roboto':
+      default:
+        return GoogleFonts.roboto(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.black87, height: 1.6);
+    }
+  }
+  if (attr.key == quill.Attribute.bold.key) {
+    return const TextStyle(fontWeight: FontWeight.bold);
+  }
+  if (attr.key == quill.Attribute.italic.key) {
+    return const TextStyle(fontStyle: FontStyle.italic, color: Color(0xFF6A4EB3));
+  }
+  if (attr.key == quill.Attribute.underline.key) {
+    return const TextStyle(decoration: TextDecoration.underline);
+  }
+  return GoogleFonts.roboto(fontSize: 14, fontWeight: FontWeight.w400, color: Colors.black87, height: 1.6);
+}
+
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
 
@@ -20,7 +47,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -87,6 +114,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           tabs: const [
             Tab(text: 'GALERÍA'),
             Tab(text: 'BIOGRAFÍA'),
+            Tab(text: 'AHORA'),
           ],
         ),
       ),
@@ -95,8 +123,415 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
         children: const [
           _GalleryTab(),
           _BioTab(),
+          _CurrentWorkTab(),
         ],
       ),
+    );
+  }
+}
+
+// ==================== CURRENT WORK TAB ====================
+
+class _CurrentWorkTab extends StatefulWidget {
+  const _CurrentWorkTab();
+
+  @override
+  State<_CurrentWorkTab> createState() => _CurrentWorkTabState();
+}
+
+class _CurrentWorkTabState extends State<_CurrentWorkTab> {
+  List<Map<String, dynamic>> _works = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWorks();
+  }
+
+  Future<void> _loadWorks() async {
+    setState(() => _isLoading = true);
+    try {
+      final works = await SupabaseService.getCurrentWorks();
+      setState(() {
+        _works = works;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteWork(Map<String, dynamic> work) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Eliminar', style: GoogleFonts.roboto(fontWeight: FontWeight.w500)),
+        content: const Text('¿Eliminar este trabajo en proceso?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await SupabaseService.deleteCurrentWork(
+        work['id'],
+        work['media_url'] ?? '',
+        work['media_type'] ?? 'video',
+      );
+      await _loadWorks();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Eliminado')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> _showWorkDialog({Map<String, dynamic>? work}) async {
+    final isEdit = work != null;
+    final titleController = TextEditingController(text: work?['title'] ?? '');
+    final descController = TextEditingController(text: work?['description'] ?? '');
+    final urlController = TextEditingController(text: work?['media_url'] ?? '');
+    final orderController = TextEditingController(text: work?['display_order']?.toString() ?? '0');
+    String mediaType = work?['media_type'] ?? 'youtube';
+    bool isUploading = false;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(
+              isEdit ? 'Editar trabajo' : 'Nuevo trabajo',
+              style: GoogleFonts.roboto(fontWeight: FontWeight.w500),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Tipo
+                  DropdownButtonFormField<String>(
+                    value: mediaType,
+                    decoration: const InputDecoration(labelText: 'Tipo'),
+                    items: const [
+                      DropdownMenuItem(value: 'youtube', child: Text('YouTube')),
+                      DropdownMenuItem(value: 'video', child: Text('Video MP4')),
+                    ],
+                    onChanged: (v) => setDialogState(() => mediaType = v!),
+                  ),
+                  const SizedBox(height: 12),
+                  // Título
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Título'),
+                  ),
+                  const SizedBox(height: 12),
+                  // Descripción
+                  TextField(
+                    controller: descController,
+                    decoration: const InputDecoration(labelText: 'Descripción'),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  // URL o Video file
+                  if (mediaType == 'youtube')
+                    TextField(
+                      controller: urlController,
+                      decoration: const InputDecoration(
+                        labelText: 'URL de YouTube',
+                        hintText: 'https://youtube.com/watch?v=...',
+                      ),
+                    )
+                  else
+                    ElevatedButton.icon(
+                      onPressed: isUploading
+                          ? null
+                          : () async {
+                              setDialogState(() => isUploading = true);
+                              try {
+                                final picker = ImagePicker();
+                                final video = await picker.pickVideo(
+                                  source: ImageSource.gallery,
+                                  maxDuration: const Duration(minutes: 10),
+                                );
+                                if (video != null) {
+                                  final bytes = await video.readAsBytes();
+                                  final url = await SupabaseService.uploadVideo(bytes, video.name);
+                                  urlController.text = url;
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Video subido')),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error al subir: $e')),
+                                  );
+                                }
+                              } finally {
+                                setDialogState(() => isUploading = false);
+                              }
+                            },
+                      icon: isUploading
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.video_file),
+                      label: Text(urlController.text.isEmpty ? 'Elegir video MP4' : 'Cambiar video'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E3845),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  if (urlController.text.isNotEmpty && mediaType == 'video')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Video cargado: ${urlController.text.split('/').last}',
+                        style: GoogleFonts.roboto(fontSize: 11, color: Colors.green[700]),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  // Orden
+                  TextField(
+                    controller: orderController,
+                    decoration: const InputDecoration(labelText: 'Orden de visualización'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: isUploading
+                    ? null
+                    : () async {
+                        final title = titleController.text.trim();
+                        final desc = descController.text.trim();
+                        final url = urlController.text.trim();
+                        final order = int.tryParse(orderController.text) ?? 0;
+
+                        if (url.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Falta la URL o el video')),
+                          );
+                          return;
+                        }
+
+                        Navigator.pop(context);
+
+                        try {
+                          if (isEdit) {
+                            await SupabaseService.updateCurrentWork(
+                              id: work!['id'],
+                              title: title.isEmpty ? null : title,
+                              description: desc.isEmpty ? null : desc,
+                              mediaUrl: url,
+                              displayOrder: order,
+                            );
+                          } else {
+                            await SupabaseService.addCurrentWork(
+                              title: title,
+                              description: desc,
+                              mediaType: mediaType,
+                              mediaUrl: url,
+                              displayOrder: order,
+                            );
+                          }
+                          await _loadWorks();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(isEdit ? 'Actualizado' : 'Agregado')),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
+                          }
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E3845),
+                ),
+                child: Text(isEdit ? 'Guardar' : 'Agregar', style: const TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width > 800;
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Text(
+                '${_works.length} trabajo(s) en proceso',
+                style: GoogleFonts.roboto(fontSize: 14, color: Colors.black54),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _isLoading ? null : () => _showWorkDialog(),
+                icon: const Icon(Icons.add, size: 20),
+                label: const Text('Agregar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E3845),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _works.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No hay trabajos en proceso',
+                        style: GoogleFonts.roboto(fontSize: 16, color: Colors.black45),
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isDesktop ? 3 : 1,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 1.4,
+                      ),
+                      itemCount: _works.length,
+                      itemBuilder: (context, index) {
+                        final work = _works[index];
+                        final isYouTube = work['media_type'] == 'youtube';
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Header con tipo
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isYouTube ? Colors.red[50] : Colors.blue[50],
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      isYouTube ? Icons.play_circle_outline : Icons.videocam,
+                                      size: 16,
+                                      color: isYouTube ? Colors.red[400] : Colors.blue[400],
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      isYouTube ? 'YouTube' : 'Video MP4',
+                                      style: GoogleFonts.roboto(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: isYouTube ? Colors.red[700] : Colors.blue[700],
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, size: 18),
+                                      color: Colors.black45,
+                                      onPressed: () => _showWorkDialog(work: work),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, size: 18),
+                                      color: Colors.red[400],
+                                      onPressed: () => _deleteWork(work),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Info
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      work['title'] ?? 'Sin título',
+                                      style: GoogleFonts.roboto(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (work['description']?.toString().isNotEmpty == true) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        work['description'],
+                                        style: GoogleFonts.roboto(
+                                          fontSize: 12,
+                                          color: Colors.black54,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      work['media_url'] ?? '',
+                                      style: GoogleFonts.roboto(fontSize: 10, color: Colors.black38),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+        ),
+      ],
     );
   }
 }
@@ -803,14 +1238,14 @@ class _BioTabState extends State<_BioTab> {
                           children: [
                             quill.QuillToolbar(
                               configurations: quill.QuillToolbarConfigurations(
-                                showBoldButton: false,
-                                showSmallButton: false,
-                                showUnderLineButton: false,
+                                showBoldButton: true,
+                                showItalicButton: true,
+                                showUnderLineButton: true,
                                 showStrikeThrough: false,
                                 showInlineCode: false,
-                                showColorButton: false,
+                                showColorButton: true,
                                 showBackgroundColorButton: false,
-                                showClearFormat: false,
+                                showClearFormat: true,
                                 showAlignmentButtons: false,
                                 showHeaderStyle: false,
                                 showListNumbers: false,
@@ -821,12 +1256,18 @@ class _BioTabState extends State<_BioTab> {
                                 showIndent: false,
                                 showLink: false,
                                 showSearchButton: false,
-                                showFontFamily: false,
-                                showFontSize: false,
+                                showFontFamily: true,
+                                showFontSize: true,
                                 showUndo: false,
                                 showRedo: false,
-                                showDividers: false,
+                                showDividers: true,
                                 multiRowsDisplay: false,
+                                fontFamilyValues: const {
+                                  'Roboto': 'Roboto',
+                                  'Playfair Display': 'Playfair Display',
+                                  'Georgia': 'Georgia',
+                                  'Courier New': 'Courier New',
+                                },
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -853,22 +1294,7 @@ class _BioTabState extends State<_BioTab> {
                                       null,
                                     ),
                                   ),
-                                  customStyleBuilder: (attr) => attr.key == quill.Attribute.italic.key
-                                      ? GoogleFonts.playfairDisplay(
-                                          fontSize: 14,
-                                          fontStyle: FontStyle.italic,
-                                          fontWeight: FontWeight.w500,
-                                          color: const Color(0xFF6A4EB3),
-                                          height: 1.6,
-                                          letterSpacing: 0.4,
-                                        )
-                                      : GoogleFonts.roboto(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: Colors.black87,
-                                          height: 1.6,
-                                          letterSpacing: 0.4,
-                                        ),
+                                  customStyleBuilder: _editorStyleForAttr,
                                 ),
                               ),
                             ),
@@ -963,14 +1389,14 @@ class _BioTabState extends State<_BioTab> {
                           children: [
                             quill.QuillToolbar(
                               configurations: quill.QuillToolbarConfigurations(
-                                showBoldButton: false,
-                                showSmallButton: false,
-                                showUnderLineButton: false,
+                                showBoldButton: true,
+                                showItalicButton: true,
+                                showUnderLineButton: true,
                                 showStrikeThrough: false,
                                 showInlineCode: false,
-                                showColorButton: false,
+                                showColorButton: true,
                                 showBackgroundColorButton: false,
-                                showClearFormat: false,
+                                showClearFormat: true,
                                 showAlignmentButtons: false,
                                 showHeaderStyle: false,
                                 showListNumbers: false,
@@ -981,12 +1407,18 @@ class _BioTabState extends State<_BioTab> {
                                 showIndent: false,
                                 showLink: false,
                                 showSearchButton: false,
-                                showFontFamily: false,
-                                showFontSize: false,
+                                showFontFamily: true,
+                                showFontSize: true,
                                 showUndo: false,
                                 showRedo: false,
-                                showDividers: false,
+                                showDividers: true,
                                 multiRowsDisplay: false,
+                                fontFamilyValues: const {
+                                  'Roboto': 'Roboto',
+                                  'Playfair Display': 'Playfair Display',
+                                  'Georgia': 'Georgia',
+                                  'Courier New': 'Courier New',
+                                },
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -1013,22 +1445,7 @@ class _BioTabState extends State<_BioTab> {
                                       null,
                                     ),
                                   ),
-                                  customStyleBuilder: (attr) => attr.key == quill.Attribute.italic.key
-                                      ? GoogleFonts.playfairDisplay(
-                                          fontSize: 14,
-                                          fontStyle: FontStyle.italic,
-                                          fontWeight: FontWeight.w500,
-                                          color: const Color(0xFF6A4EB3),
-                                          height: 1.6,
-                                          letterSpacing: 0.4,
-                                        )
-                                      : GoogleFonts.roboto(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: Colors.black87,
-                                          height: 1.6,
-                                          letterSpacing: 0.4,
-                                        ),
+                                  customStyleBuilder: _editorStyleForAttr,
                                 ),
                               ),
                             ),

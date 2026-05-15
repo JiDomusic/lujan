@@ -1,11 +1,13 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'services/supabase_service.dart';
 import 'screens/admin_login_screen.dart';
+import 'screens/current_work_screen.dart';
 
 enum AppLanguage { es, en }
 
@@ -95,147 +97,179 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String? _hoveredZone;
+  double _mouseX = 0;
+  double _mouseY = 0;
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 800;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Background - color that matches the painting
-          Positioned.fill(
-            child: Container(color: const Color(0xFFAB9090)),
-          ),
-          // Background image - rotated -90 degrees, full image visible
-          Positioned.fill(
-            child: RotatedBox(
-              quarterTurns: -1,
-              child: Image.asset(
-                'assets/home_bg.jpeg',
-                fit: BoxFit.contain,
-              ),
+    Widget homeContent = Stack(
+      children: [
+        // Background - color that matches the painting
+        Positioned.fill(
+          child: Container(color: const Color(0xFFAB9090)),
+        ),
+        // Background image - rotated -90 degrees, full image visible
+        Positioned.fill(
+          child: RotatedBox(
+            quarterTurns: -1,
+            child: Image.asset(
+              'assets/home_bg.jpeg',
+              fit: BoxFit.contain,
             ),
           ),
-          // Title overlay
-          Positioned.fill(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Lujan Allemand',
-                    style: GoogleFonts.roboto(
-                      fontSize: isDesktop ? 72 : 36,
-                      fontWeight: FontWeight.w100,
-                      color: Colors.white,
-                      letterSpacing: 8,
-                      shadows: [
-                        Shadow(
-                          offset: const Offset(2, 2),
-                          blurRadius: 8,
-                          color: Colors.black.withValues(alpha: 0.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'portfolio',
-                    style: GoogleFonts.roboto(
-                      fontSize: isDesktop ? 24 : 14,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      letterSpacing: 12,
-                      shadows: [
-                        Shadow(
-                          offset: const Offset(1, 1),
-                          blurRadius: 4,
-                          color: Colors.black.withValues(alpha: 0.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // Interactive zones - subtle hover areas
-          // Bio zone (blue jacket area - upper right where the boy is)
-          _InteractiveZone(
-            left: size.width * 0.55,
-            top: size.height * 0.15,
-            width: size.width * 0.35,
-            height: size.height * 0.45,
-            label: tr(context, es: 'bio', en: 'bio'),
-            isHovered: _hoveredZone == 'bio',
-            onHover: (isHovering) => setState(() => _hoveredZone = isHovering ? 'bio' : null),
-            onTap: () => _handleZoneTap('bio', const BioScreen()),
-            hoverColor: Colors.blue.withValues(alpha: 0.12),
-            isDesktop: isDesktop,
-          ),
-          // Gallery zone (chicken area - left/center where chickens are)
-          _InteractiveZone(
-            left: size.width * 0.02,
-            top: size.height * 0.25,
-            width: size.width * 0.45,
-            height: size.height * 0.55,
-            label: tr(context, es: 'galeria', en: 'gallery'),
-            isHovered: _hoveredZone == 'galeria',
-            onHover: (isHovering) => setState(() => _hoveredZone = isHovering ? 'galeria' : null),
-            onTap: () => _handleZoneTap('galeria', const GalleryScreen()),
-            hoverColor: Colors.orange.withValues(alpha: 0.12),
-            isDesktop: isDesktop,
-          ),
-          // Contact zone (blue sky area - top right corner)
-          _InteractiveZone(
-            left: size.width * 0.7,
-            top: 0,
-            width: size.width * 0.3,
-            height: size.height * 0.25,
-            label: tr(context, es: 'contacto', en: 'contact'),
-            isHovered: _hoveredZone == 'contacto',
-            onHover: (isHovering) => setState(() => _hoveredZone = isHovering ? 'contacto' : null),
-            onTap: () => _handleZoneTap('contacto', const ContactScreen()),
-            hoverColor: Colors.cyan.withValues(alpha: 0.12),
-            isDesktop: isDesktop,
-          ),
-          // Hint text at bottom
-          Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 500),
-              opacity: _hoveredZone == null ? 0.4 : 0.0,
-              child: Center(
-                child: Text(
-                  isDesktop
-                      ? tr(context, es: 'explora la imagen', en: 'explore the image')
-                      : tr(context, es: 'toca para explorar', en: 'tap to explore'),
+        ),
+        // Title overlay
+        Positioned.fill(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Lujan Allemand',
                   style: GoogleFonts.roboto(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w300,
-                    color: Colors.black,
-                    letterSpacing: 8,
+                    fontSize: isDesktop ? 72 : 36,
+                    fontWeight: FontWeight.w100,
+                    color: Colors.white,
+                    letterSpacing: 12,
+                    shadows: [
+                      Shadow(
+                        offset: const Offset(0, 4),
+                        blurRadius: 16,
+                        color: Colors.black.withValues(alpha: 0.35),
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'portfolio',
+                  style: GoogleFonts.roboto(
+                    fontSize: isDesktop ? 24 : 14,
+                    fontWeight: FontWeight.w200,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    letterSpacing: 16,
+                    shadows: [
+                      Shadow(
+                        offset: const Offset(0, 4),
+                        blurRadius: 16,
+                        color: Colors.black.withValues(alpha: 0.35),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Interactive zones - subtle hover areas
+        // Bio zone (blue jacket area - upper right where the boy is)
+        _InteractiveZone(
+          left: size.width * 0.55,
+          top: size.height * 0.15,
+          width: size.width * 0.35,
+          height: size.height * 0.45,
+          label: tr(context, es: 'bio', en: 'bio'),
+          isHovered: _hoveredZone == 'bio',
+          onHover: (isHovering) => setState(() => _hoveredZone = isHovering ? 'bio' : null),
+          onTap: () => _handleZoneTap('bio', const BioScreen()),
+          hoverColor: Colors.blue.withValues(alpha: 0.12),
+          isDesktop: isDesktop,
+        ),
+        // Gallery zone (chicken area - left/center where chickens are)
+        _InteractiveZone(
+          left: size.width * 0.02,
+          top: size.height * 0.25,
+          width: size.width * 0.45,
+          height: size.height * 0.55,
+          label: tr(context, es: 'galeria', en: 'gallery'),
+          isHovered: _hoveredZone == 'galeria',
+          onHover: (isHovering) => setState(() => _hoveredZone = isHovering ? 'galeria' : null),
+          onTap: () => _handleZoneTap('galeria', const GalleryScreen()),
+          hoverColor: Colors.orange.withValues(alpha: 0.12),
+          isDesktop: isDesktop,
+        ),
+        // Contact zone (blue sky area - top right corner)
+        _InteractiveZone(
+          left: size.width * 0.7,
+          top: 0,
+          width: size.width * 0.3,
+          height: size.height * 0.25,
+          label: tr(context, es: 'contacto', en: 'contact'),
+          isHovered: _hoveredZone == 'contacto',
+          onHover: (isHovering) => setState(() => _hoveredZone = isHovering ? 'contacto' : null),
+          onTap: () => _handleZoneTap('contacto', const ContactScreen()),
+          hoverColor: Colors.cyan.withValues(alpha: 0.12),
+          isDesktop: isDesktop,
+        ),
+        // Current work zone (lower right - below bio)
+        _InteractiveZone(
+          left: size.width * 0.55,
+          top: size.height * 0.62,
+          width: size.width * 0.40,
+          height: size.height * 0.30,
+          label: tr(context, es: 'ahora', en: 'now'),
+          isHovered: _hoveredZone == 'ahora',
+          onHover: (isHovering) => setState(() => _hoveredZone = isHovering ? 'ahora' : null),
+          onTap: () => _handleZoneTap('ahora', const CurrentWorkScreen()),
+          hoverColor: Colors.green.withValues(alpha: 0.08),
+          isDesktop: isDesktop,
+        ),
+        // Hint text at bottom
+        Positioned(
+          bottom: 24,
+          left: 0,
+          right: 0,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 500),
+            opacity: _hoveredZone == null ? 0.4 : 0.0,
+            child: Center(
+              child: Text(
+                isDesktop
+                    ? tr(context, es: 'explora la imagen', en: 'explore the image')
+                    : tr(context, es: 'toca para explorar', en: 'tap to explore'),
+                style: GoogleFonts.roboto(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w100,
+                  color: Colors.black,
+                  letterSpacing: 12,
                 ),
               ),
             ),
           ),
-          _LanguageToggleButton(isDesktop: isDesktop, alignRight: false),
-          // Botón Admin
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: SafeArea(
-              child: _AdminButton(isDesktop: isDesktop),
-            ),
+        ),
+        AppLanguageToggle(isDesktop: isDesktop, alignRight: false),
+        // Botón Admin
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: SafeArea(
+            child: _AdminButton(isDesktop: isDesktop),
           ),
-        ],
-      ),
+        ),
+        // Custom cursor (desktop only)
+        if (isDesktop) _CustomCursor(x: _mouseX, y: _mouseY, hoveredZone: _hoveredZone, label: _hoveredLabel(context)),
+      ],
     );
+
+    if (isDesktop) {
+      return Scaffold(
+        body: MouseRegion(
+          cursor: SystemMouseCursors.none,
+          onHover: (event) {
+            setState(() {
+              _mouseX = event.position.dx;
+              _mouseY = event.position.dy;
+            });
+          },
+          child: homeContent,
+        ),
+      );
+    }
+
+    return Scaffold(body: homeContent);
   }
 
   void _navigateTo(BuildContext context, Widget screen) {
@@ -244,12 +278,24 @@ class _HomeScreenState extends State<HomeScreen> {
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => screen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final fade = Tween<double>(begin: 0, end: 1).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
+          );
+          final slide = Tween<Offset>(
+            begin: const Offset(0, 0.05),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
+          );
           return FadeTransition(
-            opacity: animation,
-            child: child,
+            opacity: fade,
+            child: SlideTransition(
+              position: slide,
+              child: child,
+            ),
           );
         },
-        transitionDuration: const Duration(milliseconds: 500),
+        transitionDuration: const Duration(milliseconds: 800),
       ),
     )
         .then((_) {
@@ -266,6 +312,16 @@ class _HomeScreenState extends State<HomeScreen> {
         _navigateTo(context, screen);
       }
     });
+  }
+
+  String? _hoveredLabel(BuildContext context) {
+    return switch (_hoveredZone) {
+      'bio' => tr(context, es: 'bio', en: 'bio'),
+      'galeria' => tr(context, es: 'galeria', en: 'gallery'),
+      'contacto' => tr(context, es: 'contacto', en: 'contact'),
+      'ahora' => tr(context, es: 'ahora', en: 'now'),
+      _ => null,
+    };
   }
 }
 
@@ -302,7 +358,7 @@ class _InteractiveZone extends StatelessWidget {
       width: width,
       height: height,
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor: isDesktop ? SystemMouseCursors.none : SystemMouseCursors.click,
         onEnter: (_) => onHover(true),
         onExit: (_) => onHover(false),
         child: GestureDetector(
@@ -311,38 +367,56 @@ class _InteractiveZone extends StatelessWidget {
           onTapCancel: () => onHover(false),
           onTap: onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOut,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
               color: isHovered ? hoverColor : Colors.transparent,
             ),
             child: Center(
               child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 250),
                 opacity: isHovered ? 1 : 0,
-                curve: Curves.easeOut,
-              child: AnimatedScale(
-                duration: const Duration(milliseconds: 260),
-                scale: isHovered ? 1.06 : 0.9,
-                curve: Curves.easeOut,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label.toUpperCase(),
-                    maxLines: 1,
-                    softWrap: false,
-                    style: GoogleFonts.roboto(
-                      fontSize: isDesktop ? 28 : 18,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                      letterSpacing: isDesktop ? 8 : 4,
-                      shadows: [
-                        Shadow(
-                          offset: const Offset(1, 1),
-                          blurRadius: 6,
-                          color: Colors.white.withValues(alpha: 0.4),
+                curve: Curves.easeOutCubic,
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 320),
+                  scale: isHovered ? 1.08 : 0.85,
+                  curve: Curves.easeOutCubic,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: isHovered ? 0.15 : 0),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: isHovered ? 0.25 : 0),
+                            width: 1,
+                          ),
                         ),
-                      ],
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            label.toUpperCase(),
+                            maxLines: 1,
+                            softWrap: false,
+                            style: GoogleFonts.roboto(
+                              fontSize: isDesktop ? 26 : 16,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.black.withValues(alpha: 0.85),
+                              letterSpacing: isDesktop ? 12 : 6,
+                              shadows: [
+                                Shadow(
+                                  offset: const Offset(0, 2),
+                                  blurRadius: 10,
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -350,14 +424,13 @@ class _InteractiveZone extends StatelessWidget {
             ),
           ),
         ),
-        ),
       ),
     );
   }
 }
 
-class _LanguageToggleButton extends StatelessWidget {
-  const _LanguageToggleButton({
+class AppLanguageToggle extends StatelessWidget {
+  const AppLanguageToggle({
     required this.isDesktop,
     this.alignRight = true,
   });
@@ -601,22 +674,35 @@ class _BioScreenState extends State<BioScreen> {
                             ),
                           ),
                           customStyleBuilder: (attr) {
+                            final baseSize = isDesktop ? 18.0 : 14.0;
+                            if (attr.key == quill.Attribute.font.key) {
+                              final font = attr.value as String? ?? 'Roboto';
+                              switch (font) {
+                                case 'Playfair Display':
+                                  return GoogleFonts.playfairDisplay(fontSize: baseSize, color: Colors.black54, height: 1.8);
+                                case 'Georgia':
+                                  return TextStyle(fontFamily: 'Georgia', fontSize: baseSize, color: Colors.black54, height: 1.8);
+                                case 'Courier New':
+                                  return TextStyle(fontFamily: 'Courier', fontSize: baseSize, color: Colors.black54, height: 1.8);
+                                case 'Roboto':
+                                default:
+                                  return GoogleFonts.roboto(fontSize: baseSize, fontWeight: FontWeight.w300, color: Colors.black54, height: 1.8);
+                              }
+                            }
+                            if (attr.key == quill.Attribute.bold.key) {
+                              return TextStyle(fontWeight: FontWeight.bold, fontSize: baseSize);
+                            }
                             if (attr.key == quill.Attribute.italic.key) {
-                              return GoogleFonts.playfairDisplay(
-                                fontSize: isDesktop ? 18 : 14,
-                                fontStyle: FontStyle.italic,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF6A4EB3),
-                                height: 1.8,
-                                letterSpacing: 0.5,
-                              );
+                              return TextStyle(fontStyle: FontStyle.italic, color: const Color(0xFF6A4EB3), fontSize: baseSize);
+                            }
+                            if (attr.key == quill.Attribute.underline.key) {
+                              return const TextStyle(decoration: TextDecoration.underline);
                             }
                             return GoogleFonts.roboto(
-                              fontSize: isDesktop ? 18 : 14,
+                              fontSize: baseSize,
                               fontWeight: FontWeight.w300,
                               color: Colors.black54,
                               height: 1.8,
-                              letterSpacing: 0.5,
                             );
                           },
                         ),
@@ -628,8 +714,8 @@ class _BioScreenState extends State<BioScreen> {
             ),
           ),
           // Back button - subtle
-          _BackButton(isDesktop: isDesktop),
-          _LanguageToggleButton(isDesktop: isDesktop),
+          AppBackButton(isDesktop: isDesktop),
+          AppLanguageToggle(isDesktop: isDesktop),
         ],
       ),
     );
@@ -1229,8 +1315,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
               ),
             ),
           // Back button
-          _BackButton(isDesktop: isDesktop),
-          _LanguageToggleButton(isDesktop: isDesktop),
+          AppBackButton(isDesktop: isDesktop),
+          AppLanguageToggle(isDesktop: isDesktop),
         ],
       ),
     );
@@ -1501,8 +1587,8 @@ class ContactScreen extends StatelessWidget {
             ),
           ),
           // Back button (light version for dark background)
-          _BackButtonLight(isDesktop: isDesktop),
-          _LanguageToggleButton(isDesktop: isDesktop),
+          AppBackButtonLight(isDesktop: isDesktop),
+          AppLanguageToggle(isDesktop: isDesktop),
         ],
       ),
     );
@@ -1584,16 +1670,16 @@ class _ContactButtonState extends State<_ContactButton> {
 }
 
 // Light back button for dark backgrounds
-class _BackButtonLight extends StatefulWidget {
-  const _BackButtonLight({required this.isDesktop});
+class AppBackButtonLight extends StatefulWidget {
+  const AppBackButtonLight({required this.isDesktop});
 
   final bool isDesktop;
 
   @override
-  State<_BackButtonLight> createState() => _BackButtonLightState();
+  State<AppBackButtonLight> createState() => _BackButtonLightState();
 }
 
-class _BackButtonLightState extends State<_BackButtonLight> {
+class _BackButtonLightState extends State<AppBackButtonLight> {
   bool _isHovered = false;
 
   @override
@@ -1655,16 +1741,16 @@ class _BackButtonLightState extends State<_BackButtonLight> {
 }
 
 // Reusable back button
-class _BackButton extends StatefulWidget {
-  const _BackButton({required this.isDesktop});
+class AppBackButton extends StatefulWidget {
+  const AppBackButton({required this.isDesktop});
 
   final bool isDesktop;
 
   @override
-  State<_BackButton> createState() => _BackButtonState();
+  State<AppBackButton> createState() => _BackButtonState();
 }
 
-class _BackButtonState extends State<_BackButton> {
+class _BackButtonState extends State<AppBackButton> {
   bool _isHovered = false;
 
   @override
@@ -1756,6 +1842,66 @@ class _AdminButtonState extends State<_AdminButton> {
             color: Colors.white,
             size: widget.isDesktop ? 22 : 20,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// CUSTOM CURSOR — Museo-quality floating cursor
+// ============================================================
+
+class _CustomCursor extends StatelessWidget {
+  const _CustomCursor({required this.x, required this.y, this.hoveredZone, this.label});
+
+  final double x;
+  final double y;
+  final String? hoveredZone;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isHovering = hoveredZone != null;
+    final size = isHovering ? 48.0 : 12.0;
+    // Convert global position to local Stack coordinates
+    final box = context.findRenderObject() as RenderBox?;
+    final local = box?.globalToLocal(Offset(x, y)) ?? Offset(x, y);
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      left: local.dx - size / 2,
+      top: local.dy - size / 2,
+      child: IgnorePointer(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOut,
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.6),
+              width: 1,
+            ),
+            color: isHovering
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.transparent,
+          ),
+          child: isHovering
+              ? Center(
+                  child: Text(
+                    label?.toUpperCase() ?? '',
+                    style: GoogleFonts.roboto(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w300,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      letterSpacing: 1,
+                    ),
+                  ),
+                )
+              : null,
         ),
       ),
     );
