@@ -1861,6 +1861,7 @@ class _CustomCursor extends StatelessWidget {
   Widget build(BuildContext context) {
     final isHovering = hoveredZone != null;
     final cursorSize = isHovering ? 64.0 : 12.0;
+    final safeLabel = label;
     // x and y are already local Stack coordinates from Listener
     final left = (x - cursorSize / 2).clamp(0.0, double.infinity);
     final top = (y - cursorSize / 2).clamp(0.0, double.infinity);
@@ -1884,13 +1885,13 @@ class _CustomCursor extends StatelessWidget {
                 ? Colors.white.withValues(alpha: 0.06)
                 : Colors.transparent,
           ),
-          child: isHovering && label != null
+          child: isHovering && safeLabel != null
               ? Center(
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 100),
                     opacity: 0.7,
                     child: Text(
-                      (label ?? '').toUpperCase(),
+                      safeLabel.toUpperCase(),
                       style: GoogleFonts.roboto(
                         fontSize: 9,
                         fontWeight: FontWeight.w500,
