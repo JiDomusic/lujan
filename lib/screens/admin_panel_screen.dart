@@ -1206,103 +1206,82 @@ class _BioTabState extends State<_BioTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                quill.QuillProvider(
-                  configurations: quill.QuillConfigurations(
-                    controller: _esController,
-                    sharedConfigurations: quill.QuillSharedConfigurations(
-                      locale: Localizations.maybeLocaleOf(context),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.text_format, size: 16, color: Colors.black54),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Formato rápido',
+                          style: GoogleFonts.roboto(fontSize: 12, color: Colors.black54),
+                        ),
+                        const Spacer(),
+                      ],
                     ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F8F8),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: Column(
                         children: [
-                          const Icon(Icons.text_format, size: 16, color: Colors.black54),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Formato rápido',
-                            style: GoogleFonts.roboto(fontSize: 12, color: Colors.black54),
+                          quill.QuillSimpleToolbar(
+                            controller: _esController,
+                            configurations: quill.QuillSimpleToolbarConfigurations(
+                              fontFamilyValues: const {
+                                'Roboto': 'Roboto',
+                                'Playfair Display': 'Playfair Display',
+                                'Georgia': 'Georgia',
+                                'Courier New': 'Courier New',
+                              },
+                              showBoldButton: true,
+                              showItalicButton: true,
+                              showUnderLineButton: true,
+                              showColorButton: true,
+                              showClearFormat: true,
+                              showFontFamily: true,
+                              showFontSize: true,
+                              showDividers: true,
+                              multiRowsDisplay: false,
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 200,
+                            child: quill.QuillEditor(
+                              controller: _esController,
+                              focusNode: _esFocus,
+                              scrollController: _esScroll,
+                              configurations: quill.QuillEditorConfigurations(
+                                placeholder: 'Escribe la biografía en español...',
+                                padding: EdgeInsets.zero,
+                                customStyles: quill.DefaultStyles(
+                                  paragraph: quill.DefaultTextBlockStyle(
+                                    GoogleFonts.roboto(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.black87,
+                                      height: 1.6,
+                                      letterSpacing: 0.4,
+                                    ),
+                                    const quill.HorizontalSpacing(0, 0),
+                                    const quill.VerticalSpacing(0, 0),
+                                    const quill.VerticalSpacing(0, 0),
+                                    null,
+                                  ),
+                                ),
+                                customStyleBuilder: _editorStyleForAttr,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F8F8),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        child: Column(
-                          children: [
-                            quill.QuillToolbar(
-                              configurations: quill.QuillToolbarConfigurations(
-                                showBoldButton: true,
-                                showItalicButton: true,
-                                showUnderLineButton: true,
-                                showStrikeThrough: false,
-                                showInlineCode: false,
-                                showColorButton: true,
-                                showBackgroundColorButton: false,
-                                showClearFormat: true,
-                                showAlignmentButtons: false,
-                                showHeaderStyle: false,
-                                showListNumbers: false,
-                                showListBullets: false,
-                                showListCheck: false,
-                                showCodeBlock: false,
-                                showQuote: false,
-                                showIndent: false,
-                                showLink: false,
-                                showSearchButton: false,
-                                showFontFamily: true,
-                                showFontSize: true,
-                                showUndo: false,
-                                showRedo: false,
-                                showDividers: true,
-                                multiRowsDisplay: false,
-                                fontFamilyValues: const {
-                                  'Roboto': 'Roboto',
-                                  'Playfair Display': 'Playfair Display',
-                                  'Georgia': 'Georgia',
-                                  'Courier New': 'Courier New',
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              height: 200,
-                              child: quill.QuillEditor(
-                                focusNode: _esFocus,
-                                scrollController: _esScroll,
-                                configurations: quill.QuillEditorConfigurations(
-                                  readOnly: false,
-                                  placeholder: 'Escribe la biografía en español...',
-                                  padding: EdgeInsets.zero,
-                                  customStyles: quill.DefaultStyles(
-                                    paragraph: quill.DefaultTextBlockStyle(
-                                      GoogleFonts.roboto(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black87,
-                                        height: 1.6,
-                                        letterSpacing: 0.4,
-                                      ),
-                                      const quill.VerticalSpacing(0, 0),
-                                      const quill.VerticalSpacing(0, 0),
-                                      null,
-                                    ),
-                                  ),
-                                  customStyleBuilder: _editorStyleForAttr,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1357,103 +1336,82 @@ class _BioTabState extends State<_BioTab> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                quill.QuillProvider(
-                  configurations: quill.QuillConfigurations(
-                    controller: _enController,
-                    sharedConfigurations: quill.QuillSharedConfigurations(
-                      locale: Localizations.maybeLocaleOf(context),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.text_format, size: 16, color: Colors.black54),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Quick format',
+                          style: GoogleFonts.roboto(fontSize: 12, color: Colors.black54),
+                        ),
+                        const Spacer(),
+                      ],
                     ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F8F8),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      child: Column(
                         children: [
-                          const Icon(Icons.text_format, size: 16, color: Colors.black54),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Quick format',
-                            style: GoogleFonts.roboto(fontSize: 12, color: Colors.black54),
+                          quill.QuillSimpleToolbar(
+                            controller: _enController,
+                            configurations: quill.QuillSimpleToolbarConfigurations(
+                              fontFamilyValues: const {
+                                'Roboto': 'Roboto',
+                                'Playfair Display': 'Playfair Display',
+                                'Georgia': 'Georgia',
+                                'Courier New': 'Courier New',
+                              },
+                              showBoldButton: true,
+                              showItalicButton: true,
+                              showUnderLineButton: true,
+                              showColorButton: true,
+                              showClearFormat: true,
+                              showFontFamily: true,
+                              showFontSize: true,
+                              showDividers: true,
+                              multiRowsDisplay: false,
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 200,
+                            child: quill.QuillEditor(
+                              controller: _enController,
+                              focusNode: _enFocus,
+                              scrollController: _enScroll,
+                              configurations: quill.QuillEditorConfigurations(
+                                placeholder: 'Write the biography in English...',
+                                padding: EdgeInsets.zero,
+                                customStyles: quill.DefaultStyles(
+                                  paragraph: quill.DefaultTextBlockStyle(
+                                    GoogleFonts.roboto(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.black87,
+                                      height: 1.6,
+                                      letterSpacing: 0.4,
+                                    ),
+                                    const quill.HorizontalSpacing(0, 0),
+                                    const quill.VerticalSpacing(0, 0),
+                                    const quill.VerticalSpacing(0, 0),
+                                    null,
+                                  ),
+                                ),
+                                customStyleBuilder: _editorStyleForAttr,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F8F8),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        child: Column(
-                          children: [
-                            quill.QuillToolbar(
-                              configurations: quill.QuillToolbarConfigurations(
-                                showBoldButton: true,
-                                showItalicButton: true,
-                                showUnderLineButton: true,
-                                showStrikeThrough: false,
-                                showInlineCode: false,
-                                showColorButton: true,
-                                showBackgroundColorButton: false,
-                                showClearFormat: true,
-                                showAlignmentButtons: false,
-                                showHeaderStyle: false,
-                                showListNumbers: false,
-                                showListBullets: false,
-                                showListCheck: false,
-                                showCodeBlock: false,
-                                showQuote: false,
-                                showIndent: false,
-                                showLink: false,
-                                showSearchButton: false,
-                                showFontFamily: true,
-                                showFontSize: true,
-                                showUndo: false,
-                                showRedo: false,
-                                showDividers: true,
-                                multiRowsDisplay: false,
-                                fontFamilyValues: const {
-                                  'Roboto': 'Roboto',
-                                  'Playfair Display': 'Playfair Display',
-                                  'Georgia': 'Georgia',
-                                  'Courier New': 'Courier New',
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              height: 200,
-                              child: quill.QuillEditor(
-                                focusNode: _enFocus,
-                                scrollController: _enScroll,
-                                configurations: quill.QuillEditorConfigurations(
-                                  readOnly: false,
-                                  placeholder: 'Write the biography in English...',
-                                  padding: EdgeInsets.zero,
-                                  customStyles: quill.DefaultStyles(
-                                    paragraph: quill.DefaultTextBlockStyle(
-                                      GoogleFonts.roboto(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black87,
-                                        height: 1.6,
-                                        letterSpacing: 0.4,
-                                      ),
-                                      const quill.VerticalSpacing(0, 0),
-                                      const quill.VerticalSpacing(0, 0),
-                                      null,
-                                    ),
-                                  ),
-                                  customStyleBuilder: _editorStyleForAttr,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -107,6 +107,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Widget homeContent = Stack(
       children: [
+        // Mouse tracking layer (desktop only)
+        if (isDesktop)
+          Positioned.fill(
+            child: MouseRegion(
+              cursor: SystemMouseCursors.none,
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerHover: (event) {
+                  setState(() {
+                    _mouseX = event.localPosition.dx;
+                    _mouseY = event.localPosition.dy;
+                  });
+                },
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
         // Background - color that matches the painting
         Positioned.fill(
           child: Container(color: const Color(0xFFAB9090)),
@@ -254,21 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
 
-    if (isDesktop) {
-      return Scaffold(
-        body: MouseRegion(
-          cursor: SystemMouseCursors.none,
-          onHover: (event) {
-            setState(() {
-              _mouseX = event.position.dx;
-              _mouseY = event.position.dy;
-            });
-          },
-          child: homeContent,
-        ),
-      );
-    }
-
     return Scaffold(body: homeContent);
   }
 
@@ -398,7 +400,7 @@ class _InteractiveZone extends StatelessWidget {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            label.toUpperCase(),
+                            label?.toUpperCase() ?? '',
                             maxLines: 1,
                             softWrap: false,
                             style: GoogleFonts.roboto(
@@ -548,10 +550,12 @@ class _BioScreenState extends State<BioScreen> {
     _esController = quill.QuillController(
       document: _parseBio(null, fallback: _defaultBioEs),
       selection: const TextSelection.collapsed(offset: 0),
+      readOnly: true,
     );
     _enController = quill.QuillController(
       document: _parseBio(null, fallback: _defaultBioEn),
       selection: const TextSelection.collapsed(offset: 0),
+      readOnly: true,
     );
     _loadBio();
   }
@@ -645,67 +649,60 @@ class _BioScreenState extends State<BioScreen> {
                     final controller = LanguageScope.languageOf(context) == AppLanguage.es
                         ? _esController
                         : _enController;
-                    return quill.QuillProvider(
-                      configurations: quill.QuillConfigurations(
-                        controller: controller,
-                        sharedConfigurations: quill.QuillSharedConfigurations(
-                          locale: Localizations.maybeLocaleOf(context),
-                        ),
-                      ),
-                      child: quill.QuillEditor(
-                        focusNode: _viewerFocus,
-                        scrollController: _viewerScroll,
-                        configurations: quill.QuillEditorConfigurations(
-                          readOnly: true,
-                          enableInteractiveSelection: false,
-                          padding: EdgeInsets.zero,
-                          customStyles: quill.DefaultStyles(
-                            paragraph: quill.DefaultTextBlockStyle(
-                              GoogleFonts.roboto(
-                                fontSize: isDesktop ? 18 : 14,
-                                fontWeight: FontWeight.w300,
-                                color: Colors.black54,
-                                height: 1.8,
-                                letterSpacing: 0.5,
-                              ),
-                              const quill.VerticalSpacing(0, 0),
-                              const quill.VerticalSpacing(0, 0),
-                              null,
-                            ),
-                          ),
-                          customStyleBuilder: (attr) {
-                            final baseSize = isDesktop ? 18.0 : 14.0;
-                            if (attr.key == quill.Attribute.font.key) {
-                              final font = attr.value as String? ?? 'Roboto';
-                              switch (font) {
-                                case 'Playfair Display':
-                                  return GoogleFonts.playfairDisplay(fontSize: baseSize, color: Colors.black54, height: 1.8);
-                                case 'Georgia':
-                                  return TextStyle(fontFamily: 'Georgia', fontSize: baseSize, color: Colors.black54, height: 1.8);
-                                case 'Courier New':
-                                  return TextStyle(fontFamily: 'Courier', fontSize: baseSize, color: Colors.black54, height: 1.8);
-                                case 'Roboto':
-                                default:
-                                  return GoogleFonts.roboto(fontSize: baseSize, fontWeight: FontWeight.w300, color: Colors.black54, height: 1.8);
-                              }
-                            }
-                            if (attr.key == quill.Attribute.bold.key) {
-                              return TextStyle(fontWeight: FontWeight.bold, fontSize: baseSize);
-                            }
-                            if (attr.key == quill.Attribute.italic.key) {
-                              return TextStyle(fontStyle: FontStyle.italic, color: const Color(0xFF6A4EB3), fontSize: baseSize);
-                            }
-                            if (attr.key == quill.Attribute.underline.key) {
-                              return const TextStyle(decoration: TextDecoration.underline);
-                            }
-                            return GoogleFonts.roboto(
-                              fontSize: baseSize,
+                    return quill.QuillEditor(
+                      controller: controller,
+                      focusNode: _viewerFocus,
+                      scrollController: _viewerScroll,
+                      configurations: quill.QuillEditorConfigurations(
+                        enableInteractiveSelection: false,
+                        padding: EdgeInsets.zero,
+                        customStyles: quill.DefaultStyles(
+                          paragraph: quill.DefaultTextBlockStyle(
+                            GoogleFonts.roboto(
+                              fontSize: isDesktop ? 18 : 14,
                               fontWeight: FontWeight.w300,
                               color: Colors.black54,
                               height: 1.8,
-                            );
-                          },
+                              letterSpacing: 0.5,
+                            ),
+                            const quill.HorizontalSpacing(0, 0),
+                            const quill.VerticalSpacing(0, 0),
+                            const quill.VerticalSpacing(0, 0),
+                            null,
+                          ),
                         ),
+                        customStyleBuilder: (attr) {
+                          final baseSize = isDesktop ? 18.0 : 14.0;
+                          if (attr.key == quill.Attribute.font.key) {
+                            final font = attr.value as String? ?? 'Roboto';
+                            switch (font) {
+                              case 'Playfair Display':
+                                return GoogleFonts.playfairDisplay(fontSize: baseSize, color: Colors.black54, height: 1.8);
+                              case 'Georgia':
+                                return TextStyle(fontFamily: 'Georgia', fontSize: baseSize, color: Colors.black54, height: 1.8);
+                              case 'Courier New':
+                                return TextStyle(fontFamily: 'Courier', fontSize: baseSize, color: Colors.black54, height: 1.8);
+                              case 'Roboto':
+                              default:
+                                return GoogleFonts.roboto(fontSize: baseSize, fontWeight: FontWeight.w300, color: Colors.black54, height: 1.8);
+                            }
+                          }
+                          if (attr.key == quill.Attribute.bold.key) {
+                            return TextStyle(fontWeight: FontWeight.bold, fontSize: baseSize);
+                          }
+                          if (attr.key == quill.Attribute.italic.key) {
+                            return TextStyle(fontStyle: FontStyle.italic, color: const Color(0xFF6A4EB3), fontSize: baseSize);
+                          }
+                          if (attr.key == quill.Attribute.underline.key) {
+                            return const TextStyle(decoration: TextDecoration.underline);
+                          }
+                          return GoogleFonts.roboto(
+                            fontSize: baseSize,
+                            fontWeight: FontWeight.w300,
+                            color: Colors.black54,
+                            height: 1.8,
+                          );
+                        },
                       ),
                     );
                   }),
@@ -1863,41 +1860,43 @@ class _CustomCursor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isHovering = hoveredZone != null;
-    final size = isHovering ? 48.0 : 12.0;
-    // Convert global position to local Stack coordinates
-    final box = context.findRenderObject() as RenderBox?;
-    final local = box?.globalToLocal(Offset(x, y)) ?? Offset(x, y);
+    final cursorSize = isHovering ? 64.0 : 12.0;
+    // x and y are already local Stack coordinates from Listener
+    final left = (x - cursorSize / 2).clamp(0.0, double.infinity);
+    final top = (y - cursorSize / 2).clamp(0.0, double.infinity);
 
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
-      left: local.dx - size / 2,
-      top: local.dy - size / 2,
+    return Positioned(
+      left: left,
+      top: top,
       child: IgnorePointer(
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOut,
-          width: size,
-          height: size,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+          width: cursorSize,
+          height: cursorSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.6),
-              width: 1,
+              color: Colors.white.withValues(alpha: isHovering ? 0.5 : 0.7),
+              width: isHovering ? 1.5 : 1,
             ),
             color: isHovering
-                ? Colors.white.withValues(alpha: 0.08)
+                ? Colors.white.withValues(alpha: 0.06)
                 : Colors.transparent,
           ),
-          child: isHovering
+          child: isHovering && label != null
               ? Center(
-                  child: Text(
-                    label?.toUpperCase() ?? '',
-                    style: GoogleFonts.roboto(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      letterSpacing: 1,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 100),
+                    opacity: 0.7,
+                    child: Text(
+                      (label ?? '').toUpperCase(),
+                      style: GoogleFonts.roboto(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                   ),
                 )
