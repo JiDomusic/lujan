@@ -64,7 +64,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           // Imagen de fondo
           Positioned.fill(
             child: Image.asset(
-              'assets/gallery_1.jpeg',
+              'assets/home_bg.jpeg',
               fit: BoxFit.cover,
               color: Colors.black.withValues(alpha: 0.4),
               colorBlendMode: BlendMode.darken,

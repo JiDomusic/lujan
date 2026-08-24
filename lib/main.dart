@@ -731,192 +731,17 @@ class _GalleryScreenState extends State<GalleryScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   bool _isVerticalView = true;
+  bool _cargando = true;
   List<Map<String, dynamic>> _supabaseItems = [];
 
-  // Datos de las obras de assets: imagen, título, medidas, rotación
-  final List<Map<String, dynamic>> _assetGalleryItems = [
-    {
-      'image': 'assets/gallery_1.jpeg',
-      'title': 'Sin titulo',
-      'size': '30 x 40 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '2024',
-      'rotation': -1,
-    },
-    {
-      'image': 'assets/gallery_2.jpeg',
-      'title': 'Sin titulo',
-      'size': '30 x 40 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '2024',
-      'rotation': -1,
-    },
-    {
-      'image': 'assets/gallery_3.jpeg',
-      'title': 'Sin titulo',
-      'size': '30 x 40 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '2024',
-      'rotation': -1,
-    },
-    {
-      'image': 'assets/gallery_4.jpeg',
-      'title': 'Sin titulo',
-      'size': '30 x 40 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '2024',
-      'rotation': -1,
-    },
-    {
-      'image': 'assets/6- 21x29 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '21 x 29 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/7- 29 x 44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/8 - 29x 44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/9 - 29 x44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/10 -21x29 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '21 x 29 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/11 -29 x 44cm oleo sobre lienzo - 2.jpg.jpeg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/12- 21x29 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '21 x 29 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/13 - 21x29 cm oleo sobre lienzo - 2.jpg',
-      'title': 'Sin titulo',
-      'size': '21 x 29 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/14 - 20x30 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '20 x 30 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/15 - 21x21 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '21 x 21 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/16 - 29 x 44  cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/17- 29x44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/18 - 29x44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/19 - 29x44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/20 - 29x44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/21 - 29x44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-    {
-      'image': 'assets/22- 29x44 cm oleo sobre lienzo.jpg',
-      'title': 'Sin titulo',
-      'size': '29 x 44 cm',
-      'technique': 'Oleo sobre lienzo',
-      'year': '',
-      'rotation': 0,
-    },
-  ];
-
-  // Combinar assets + supabase
-  // Primero las obras locales (no se tocan), luego las que se suban al bucket
-  List<Map<String, dynamic>> get _galleryItems => [
-        ..._assetGalleryItems,
-        ..._supabaseItems,
-      ];
+  // La galeria sale 100% de Supabase: son las obras que Lujan sube desde el
+  // panel. Asi puede agregar y borrar cualquiera sin tocar el codigo.
+  List<Map<String, dynamic>> get _galleryItems => _supabaseItems;
 
   @override
   void initState() {
     super.initState();
     _loadSupabaseImages();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheGalleryImages(context));
   }
 
   Future<void> _loadSupabaseImages() async {
@@ -933,10 +758,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
                 'rotation': img['rotation'] ?? 0,
                 'isNetwork': true,
               }).toList();
+          _cargando = false;
         });
+        _precacheGalleryImages(context);
       }
     } catch (e) {
-      // Silently fail - show only asset images
+      // Si Supabase no responde, cortar la espera igual y mostrar el aviso
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
@@ -1025,6 +853,48 @@ class _GalleryScreenState extends State<GalleryScreen> {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 800;
     final isMobileVertical = !isDesktop && _isVerticalView;
+
+    // Mientras cargan las obras, o si todavia no hay ninguna subida al panel,
+    // no armar el PageView: se queda sin paginas y las flechas no tienen a donde ir.
+    if (_cargando || _galleryItems.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F8F8),
+        body: Stack(
+          children: [
+            Center(
+              child: _cargando
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.2,
+                        color: Color(0xFF1a1a1a),
+                      ),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        tr(
+                          context,
+                          es: 'Muy pronto, obra nueva.',
+                          en: 'New work coming soon.',
+                        ),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.roboto(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w300,
+                          color: const Color(0xFF1a1a1a),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+            ),
+            AppBackButton(isDesktop: isDesktop),
+            AppLanguageToggle(isDesktop: isDesktop),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -1320,20 +1190,22 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   void _precacheGalleryImages(BuildContext context) {
-    // Precargar solo assets locales para no forzar carga de red innecesaria
-    final assets = _galleryItems.where((e) => e['isNetwork'] != true).toList();
-    for (int i = 0; i < assets.length && i < 3; i++) {
-      precacheImage(AssetImage(assets[i]['image']!), context);
+    // Las obras vienen de Supabase: precargar las primeras para que la galeria
+    // abra sin parpadeo, y el resto con un respiro para no pedir todo junto.
+    final obras = _galleryItems;
+    for (int i = 0; i < obras.length && i < 3; i++) {
+      precacheImage(NetworkImage(obras[i]['image']!), context);
     }
-    Future.delayed(const Duration(milliseconds: 100), () {
-      for (int i = 3; i < assets.length; i++) {
-        precacheImage(AssetImage(assets[i]['image']!), context);
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      for (int i = 3; i < obras.length; i++) {
+        precacheImage(NetworkImage(obras[i]['image']!), context);
       }
     });
   }
 
   void _precacheNearbyImages(BuildContext context, int currentIndex) {
-    // Precargar las imágenes cercanas (solo assets locales)
+    // Precargar las obras vecinas para que pasar de una a otra sea instantaneo
     final indicesToPreload = [
       currentIndex - 1,
       currentIndex + 1,
@@ -1341,9 +1213,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
     ].where((i) => i >= 0 && i < _galleryItems.length);
 
     for (final i in indicesToPreload) {
-      final item = _galleryItems[i];
-      if (item['isNetwork'] == true) continue;
-      precacheImage(AssetImage(item['image']!), context);
+      precacheImage(NetworkImage(_galleryItems[i]['image']!), context);
     }
   }
 }

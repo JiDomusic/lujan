@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import '../services/compresor_imagen.dart';
 import '../services/supabase_service.dart';
 
 TextStyle _editorStyleForAttr(quill.Attribute attr) {
@@ -591,10 +592,15 @@ class _GalleryTabState extends State<_GalleryTab> {
     // Subir imagen
     setState(() => _isLoading = true);
     try {
+      // El picker en web ignora maxWidth/imageQuality, asi que la foto llega
+      // tal cual salio de la camara. Se optimiza aca antes de que toque el bucket.
       final bytes = await pickedFile.readAsBytes();
-      final fileName = pickedFile.name;
+      final optimizada = await CompresorImagen.optimizar(bytes, pickedFile.name);
 
-      final imageUrl = await SupabaseService.uploadImage(bytes, fileName);
+      final imageUrl = await SupabaseService.uploadImage(
+        optimizada.bytes,
+        optimizada.nombre,
+      );
 
       await SupabaseService.addGalleryImage(
         imageUrl: imageUrl,
